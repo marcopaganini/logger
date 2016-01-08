@@ -1,68 +1,89 @@
+// Simple log replacement for go with Verbosity and Debug levels, and
+// multi-stream output support.
+//
+// (C) by Marco Paganini <paganini AT paganini DOT net>
+
 package logger
 
-// Simple Verbose & Debug Logger for Go
-//
-// (C) Sep/2014 by Marco Paganini <paganini AT paganini DOT net>
-
 import (
+	"fmt"
+	"io"
 	"log"
 	"os"
 )
 
-// Base Logger struct using anonymous *log.Logger method
+// Logger represents a logger object
 type Logger struct {
 	*log.Logger
 	verbose int
 	debug   int
+	streams []*os.File
 }
 
-// Creates a new Logger instance based on log and returns it
-//
-// Returns:
-//   logger instance
+// New Creates a new Logger instance.
 func New(prefix string) *Logger {
 	o := log.New(os.Stderr, prefix, 0)
-	return &Logger{o, 0, 0}
+	return &Logger{o, 0, 0, []*os.File{os.Stdout}}
 }
 
-// Set Verbose level
+// SetVerboseLevel sets the verbosity level for this log instance.
 func (o *Logger) SetVerboseLevel(n int) {
 	o.verbose = n
 }
 
-// Set Debugging level
+// SetDebugLevel sets the debugging level for this log instance.
 func (o *Logger) SetDebugLevel(n int) {
 	o.debug = n
 }
 
-// PrintLn the message if the current verbose level >= 'level'
+// SetOutput sets the output streams to the list of writers.
+func (o *Logger) SetOutput(streams []*os.File) {
+	o.streams = streams
+}
+
+// writeString sends the string to all defined outputs.
+func (o *Logger) writeString(s string) {
+	for _, w := range o.streams {
+		io.WriteString(w, s)
+	}
+}
+
+// Verboseln prints the message to the output streams, followed by a newline,
+// if the current verbose level is greater than or equal the specified
+// verbosity level.
 func (o *Logger) Verboseln(level int, v ...interface{}) {
 	if o.verbose >= level {
-		o.Println(v...)
+		o.writeString(fmt.Sprintln(v...))
 	}
 }
 
-// Printf the message and parameters if the current verbose level >= 'level'
+// Verbosef uses the formatting string and variables to print a message to the
+// output streams if the current verbose level is greater than or equal to the
+// specified verbose level.
 func (o *Logger) Verbosef(level int, format string, v ...interface{}) {
 	if o.verbose >= level {
-		o.Printf(format, v...)
+		o.writeString(fmt.Sprintf(format, v...))
 	}
 }
 
-// PrintLn the message if the current Debug level >= 'level'
+// Debugln prints the message to the output streams, followed by a newline,
+// if the current debugging level is greater than or equal the specified
+// debugging level.
 func (o *Logger) Debugln(level int, v ...interface{}) {
 	o.SetFlags(log.Lshortfile)
 	if o.debug >= level {
-		o.Println(v...)
+		o.writeString(fmt.Sprintln(v...))
 	}
 	o.SetFlags(0)
 }
 
-// Printf the message and parameters if the current Debug level >= 'level'
+// Debugf uses the formatting string and variables to print a message to the
+// output streams if the current debugging level is greater than or equal to the
+// specified debugging level.
 func (o *Logger) Debugf(level int, format string, v ...interface{}) {
 	o.SetFlags(log.Lshortfile)
 	if o.debug >= level {
-		o.Printf(format, v...)
+		o.writeString(fmt.Sprintf(format, v...))
 	}
 	o.SetFlags(0)
 }
