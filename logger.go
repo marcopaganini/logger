@@ -66,26 +66,26 @@ func (o *Logger) writeString(level int, s string) {
 }
 
 // Println prints the message to the output streams followed by a newline.
-func (o *Logger) Println(level int, v ...interface{}) {
+func (o *Logger) Println(v ...interface{}) {
 	o.writeString(0, fmt.Sprintln(v...))
 }
 
 // Printf uses the formatting string and variables to print a message to the
 // output streams.
-func (o *Logger) Printf(level int, format string, v ...interface{}) {
+func (o *Logger) Printf(format string, v ...interface{}) {
 	o.writeString(0, fmt.Sprintf(format, v...))
 }
 
 // Fatalln prints the message to the output streams followed by a newline
 // and calls os.Exit(1).
-func (o *Logger) Fatalln(level int, v ...interface{}) {
-	o.writeString(level, fmt.Sprintln(v...))
+func (o *Logger) Fatalln(v ...interface{}) {
+	o.writeString(0, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
 // Fatalf prints a formatted message to the output streams and calls os.Exit(1).
-func (o *Logger) Fatalf(level int, format string, v ...interface{}) {
-	o.writeString(level, fmt.Sprintf(format, v...))
+func (o *Logger) Fatalf(format string, v ...interface{}) {
+	o.writeString(0, fmt.Sprintf(format, v...))
 	os.Exit(1)
 }
 
