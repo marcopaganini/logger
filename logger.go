@@ -8,22 +8,24 @@ package logger
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 )
 
 // Logger represents a logger object
 type Logger struct {
-	*log.Logger
-	verbose int
-	debug   int
-	streams []*os.File
+	verbose      int
+	debug        int
+	outputs      []*os.File
+	mirrorOutput *os.File
 }
 
 // New Creates a new Logger instance.
 func New(prefix string) *Logger {
-	o := log.New(os.Stderr, prefix, 0)
-	return &Logger{o, 0, 0, []*os.File{os.Stdout}}
+	return &Logger{
+		verbose:      0,
+		debug:        0,
+		outputs:      []*os.File{os.Stderr},
+		mirrorOutput: nil}
 }
 
 // SetVerboseLevel sets the verbosity level for this log instance.
@@ -36,54 +38,81 @@ func (o *Logger) SetDebugLevel(n int) {
 	o.debug = n
 }
 
-// SetOutput sets the output streams to the list of writers.
-func (o *Logger) SetOutput(streams []*os.File) {
-	o.streams = streams
+// SetOutputs sets the outputs to the slice *os.File
+func (o *Logger) SetOutputs(outputs []*os.File) {
+	o.outputs = outputs
 }
 
-// writeString sends the string to all defined outputs.
-func (o *Logger) writeString(s string) {
-	for _, w := range o.streams {
-		io.WriteString(w, s)
+// SetMirrorOutput sets the mirror output stream to the writers.
+func (o *Logger) SetMirrorOutput(output *os.File) {
+	o.mirrorOutput = output
+}
+
+// writeString sends the string to all defined outputs if the requested level
+// is less than or equal to the configured verbose level. Note that if the
+// mirrorOutput stream is non nil, the message is always written to it,
+// independent of the error level.
+func (o *Logger) writeString(level int, s string) {
+	// Conditionally output to all streams
+	if level <= o.verbose {
+		for _, w := range o.outputs {
+			io.WriteString(w, s)
+		}
 	}
+	// Output to mirror output if non-nil
+	if o.mirrorOutput != nil {
+		io.WriteString(o.mirrorOutput, s)
+	}
+}
+
+// Println prints the message to the output streams followed by a newline.
+func (o *Logger) Println(level int, v ...interface{}) {
+	o.writeString(0, fmt.Sprintln(v...))
+}
+
+// Printf uses the formatting string and variables to print a message to the
+// output streams.
+func (o *Logger) Printf(level int, format string, v ...interface{}) {
+	o.writeString(0, fmt.Sprintf(format, v...))
+}
+
+// Fatalln prints the message to the output streams followed by a newline
+// and calls os.Exit(1).
+func (o *Logger) Fatalln(level int, v ...interface{}) {
+	o.writeString(level, fmt.Sprintln(v...))
+	os.Exit(1)
+}
+
+// Fatalf prints a formatted message to the output streams and calls os.Exit(1).
+func (o *Logger) Fatalf(level int, format string, v ...interface{}) {
+	o.writeString(level, fmt.Sprintf(format, v...))
+	os.Exit(1)
 }
 
 // Verboseln prints the message to the output streams, followed by a newline,
 // if the current verbose level is greater than or equal the specified
 // verbosity level.
 func (o *Logger) Verboseln(level int, v ...interface{}) {
-	if o.verbose >= level {
-		o.writeString(fmt.Sprintln(v...))
-	}
+	o.writeString(level, fmt.Sprintln(v...))
 }
 
 // Verbosef uses the formatting string and variables to print a message to the
 // output streams if the current verbose level is greater than or equal to the
 // specified verbose level.
 func (o *Logger) Verbosef(level int, format string, v ...interface{}) {
-	if o.verbose >= level {
-		o.writeString(fmt.Sprintf(format, v...))
-	}
+	o.writeString(level, fmt.Sprintf(format, v...))
 }
 
 // Debugln prints the message to the output streams, followed by a newline,
 // if the current debugging level is greater than or equal the specified
 // debugging level.
 func (o *Logger) Debugln(level int, v ...interface{}) {
-	o.SetFlags(log.Lshortfile)
-	if o.debug >= level {
-		o.writeString(fmt.Sprintln(v...))
-	}
-	o.SetFlags(0)
+	o.writeString(level, fmt.Sprintln(v...))
 }
 
 // Debugf uses the formatting string and variables to print a message to the
 // output streams if the current debugging level is greater than or equal to the
 // specified debugging level.
 func (o *Logger) Debugf(level int, format string, v ...interface{}) {
-	o.SetFlags(log.Lshortfile)
-	if o.debug >= level {
-		o.writeString(fmt.Sprintf(format, v...))
-	}
-	o.SetFlags(0)
+	o.writeString(level, fmt.Sprintf(format, v...))
 }
