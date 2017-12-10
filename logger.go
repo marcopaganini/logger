@@ -15,8 +15,8 @@ import (
 type Logger struct {
 	verbose      int
 	debug        int
-	outputs      []*os.File
-	mirrorOutput *os.File
+	outputs      []io.Writer
+	mirrorOutput io.Writer
 }
 
 // New Creates a new Logger instance.
@@ -24,7 +24,7 @@ func New(prefix string) *Logger {
 	return &Logger{
 		verbose:      0,
 		debug:        0,
-		outputs:      []*os.File{os.Stderr},
+		outputs:      []io.Writer{os.Stderr},
 		mirrorOutput: nil}
 }
 
@@ -38,13 +38,14 @@ func (o *Logger) SetDebugLevel(n int) {
 	o.debug = n
 }
 
-// SetOutputs sets the outputs to the slice *os.File
-func (o *Logger) SetOutputs(outputs []*os.File) {
+// SetOutputs sets all logging outputs to the outputs presented
+// in the slice of io.Writers.
+func (o *Logger) SetOutputs(outputs []io.Writer) {
 	o.outputs = outputs
 }
 
 // SetMirrorOutput sets the mirror output stream to the writers.
-func (o *Logger) SetMirrorOutput(output *os.File) {
+func (o *Logger) SetMirrorOutput(output io.Writer) {
 	o.mirrorOutput = output
 }
 
