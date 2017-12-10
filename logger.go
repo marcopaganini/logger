@@ -83,6 +83,11 @@ func (o *Logger) Fatalln(v ...interface{}) {
 	os.Exit(1)
 }
 
+// Fatal is a convenience alias for Fatalln.
+func (o *Logger) Fatal(v ...interface{}) {
+	o.Fatalln(v...)
+}
+
 // Fatalf prints a formatted message to the output streams and calls os.Exit(1).
 func (o *Logger) Fatalf(format string, v ...interface{}) {
 	o.writeString(0, fmt.Sprintf(format, v...))
