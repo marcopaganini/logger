@@ -6,6 +6,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +28,13 @@ func New(prefix string) *Logger {
 		outputs:      []io.Writer{os.Stderr},
 		mirrorOutput: nil}
 }
+
+// key for Context use.
+type key int
+
+const (
+	keyLogger = key(iota)
+)
 
 // SetVerboseLevel sets the verbosity level for this log instance.
 func (o *Logger) SetVerboseLevel(n int) {
@@ -121,4 +129,20 @@ func (o *Logger) Debugln(level int, v ...interface{}) {
 // specified debugging level.
 func (o *Logger) Debugf(level int, format string, v ...interface{}) {
 	o.writeString(level, fmt.Sprintf(format, v...))
+}
+
+// WithLogger returns a new context with the logger object added to it.
+func WithLogger(ctx context.Context, log Logger) context.Context {
+	return context.WithValue(ctx, keyLogger, log)
+}
+
+// Logf returns the logger function from the context. If no logger function has
+// been set, create a new logger object and return it. Users should not rely on
+// this behavior and set their own logger functions.
+func Logf(ctx context.Context, log Logger) *Logger {
+	ret, ok := ctx.Value(keyLogger).(*Logger)
+	if !ok {
+		panic("internal error: No logger function set or wrong type.")
+	}
+	return ret
 }
