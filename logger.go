@@ -132,14 +132,14 @@ func (o *Logger) Debugf(level int, format string, v ...interface{}) {
 }
 
 // WithLogger returns a new context with the logger object added to it.
-func WithLogger(ctx context.Context, log Logger) context.Context {
+func WithLogger(ctx context.Context, log *Logger) context.Context {
 	return context.WithValue(ctx, keyLogger, log)
 }
 
 // Logf returns the logger function from the context. If no logger function has
 // been set, create a new logger object and return it. Users should not rely on
 // this behavior and set their own logger functions.
-func Logf(ctx context.Context, log Logger) *Logger {
+func Logf(ctx context.Context, log *Logger) *Logger {
 	ret, ok := ctx.Value(keyLogger).(*Logger)
 	if !ok {
 		panic("internal error: No logger function set or wrong type.")
